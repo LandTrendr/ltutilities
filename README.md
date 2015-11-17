@@ -10,6 +10,8 @@ Utilities included:
 
 Dependency: LandTrendr lthacks library - https://github.com/LandTrendr/lthacks
 
+Clone somewhere in your $PATH for command line access.
+
 ______________________________________________________________________
 **intersectMask <source> <mask> <output> [--src_band=<sb>] [--msk_band=<mb>] [--msk_value=<mv>] [--meta=<m>]**
 
