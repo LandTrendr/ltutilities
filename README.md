@@ -8,6 +8,8 @@ Utilities included:
 - echoKernel
 - silentRun
 
+Dependency: LandTrendr lthacks library - https://github.com/LandTrendr/lthacks
+
 ______________________________________________________________________
 **intersectMask <source> <mask> <output> [--src_band=<sb>] [--msk_band=<mb>] [--msk_value=<mv>] [--meta=<m>]**
 
