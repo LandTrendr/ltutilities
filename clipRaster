@@ -1,0 +1,67 @@
+#!/usr/bin/env python
+'''
+Clip Raster. 
+This routine clips a sourceFile by using a clipFile. 
+If provided clipFile is a raster, it will be converted to a polygon (.shp) before clipping.
+
+Usage: 
+    clipRaster <source> <clip> <output> [--poly_band=<pb>] [--nodata=<n>] [--field=<f>] [--attr=<a>...] 
+    clipRaster (-h | --help)
+
+Options:
+    -h --help               Show this screen
+    --poly_band=<pb>        Band of source file to be clipped [default: 1]         
+    --nodata=<n>            Specify no data value for output file 
+    --field=<f>             Field name for shapefile [default: 'FIELD1']
+    --attr=<a>              Attributes to be included in the cropped output
+'''
+import docopt, os, subprocess
+
+POLY_CMD_TEMP = 'gdal_polygonize.py {0} -b {1} -f "ESRI Shapefile" {2} {3} {4}'
+CLIP_CMD_TEMP1 = 'gdalwarp {0} {1} -cutline {2} -dstnodata {3} -of ENVI'
+CLIP_CMD_TEMP2 = 'gdalwarp {0} {1} -cutline {2} {3} -dstnodata {4} -of ENVI'
+
+def main(source, clip, output, band, nodata, field, attributes):
+    #convert clip raster to shapefile
+    if not clip.endswith('.shp'):
+        print "\nConverting raster to shapefile..."
+        outDir = os.path.dirname(output) 
+        shapefile = os.path.join(outDir, os.path.splitext(os.path.basename(clip))[0] + '.shp')
+        layer = shapefile.replace('.shp', '.lyr')
+        poly_statement = POLY_CMD_TEMP.format(clip, band, shapefile, layer, field)
+        print "\n" + poly_statement + "\n"
+        os.system(poly_statement)
+        print "Shapefile available here: " + shapefile
+    else:
+        shapefile = clip
+
+    #use shapefile to clip raster       
+    if not attributes:
+        clip_statement = CLIP_CMD_TEMP1.format(source, output, shapefile, nodata)
+    else:
+        #construct where clause if attributes specified
+        query = '-cwhere "{0}={1}'.format(field, "'"+ attributes[0] +"'")
+        if len(attributes) > 1:
+            addQuery = " OR {0}='".format(field) + "' OR {0}='".join(attributes[1:]).format(field) + "'" + '"'
+        else:
+            addQuery = '"'
+        query = query + addQuery
+        clip_statement = CLIP_CMD_TEMP2.format(source, output, shapefile, query, nodata)
+
+    #delete -dstnodata clause if nodata not specified
+    if not nodata: clip_statement.replace(' -dstnodata None', '') 
+    print "\n" + clip_statement + "\n"
+    subprocess.call(clip_statement, shell=True)
+
+  
+if __name__ == '__main__':
+
+    try:
+        #parse arguments, use file docstring as parameter definition
+        args = docopt.docopt(__doc__)
+        #call main function
+        main(args['<source>'], args['<clip>'], args['<output>'], args['--poly_band'], args['--nodata'], args['--field'], args['--attr'])
+
+    #handle invalid options
+    except docopt.DocoptExit as e:
+        print e.message

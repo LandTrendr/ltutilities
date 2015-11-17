@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+'''
+Create Mask.
+Executable to create a mask on the fly from any map, band, value combination.
+
+Usage:
+	createMask <input_map> <input_band> <mask_value> <output_datatype> <output_path>
+	createMask (-h | --help)
+
+Options:
+	-h --help		Show this screen.
+'''
+
+import gdal, os, sys, docopt
+from gdalconst import *
+import numpy as np
+from intersectMask import *
+
+DATATYPES = {'byte': GDT_Byte, 'uint16': GDT_UInt16, 'int16': GDT_Int16, 'uint32': GDT_UInt32, 'int32': GDT_Int32,
+			 'float32': GDT_Float32, 'float64': GDT_Float64}
+
+def main(mapPath, mapBand, maskVal, dt, outPath):
+	ds =gdal.Open(mapPath, GA_ReadOnly)
+	projection = ds.GetProjection()
+	driver = ds.GetDriver()
+	transform = ds.GetGeoTransform()
+
+	ds_array = np.array(ds.GetRasterBand(int(mapBand)).ReadAsArray())
+
+	mask_array = ds_array == int(maskVal)
+
+	saveArrayAsRaster(mask_array, transform, projection, driver, outPath, datatype=DATATYPES[dt])
+
+if __name__ == '__main__':
+	args = sys.argv
+	sys.exit(main(args[1],args[2],args[3], args[4],args[5]))
+	
+if __name__ == '__main__':
+
+	try:
+		#parse arguments, use file docstring as parameter definition
+		args = docopt.docopt(__doc__)
+		#call main function
+		if args['output_datatype'].lower() in DATATYPES.keys():
+			dt = args['output_datatype']
+		else:
+			sys.exit("Datatype '{0}' not valid. Choices: {1}").format(args['output_datatype'], " ".join(DATATYPES.keys())
+		
+		main(args['<input_map>'], args['<input_band>'], args['<mask_value>'], dt, args['<output_path>'])
+
+	#handle invalid options
+	except docopt.DocoptExit as e:
+		print e.message
+
