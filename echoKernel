@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+'''
+Echo Kernel.
+
+Usage:
+  echoKernel <mappath> <x> <y> <kernel_size> [--band=<b>...]
+  echoKernel -h | --help
+
+Options:
+  -h --help             Show this screen.
+  --band=<b>            Band(s) of source file [default: ALL].
+'''
+import docopt, os, gdal
+from lthacks.lthacks import *
+
+def open_map_and_extract_bands(mappath):
+	ds = gdal.Open(mappath)
+	transform = ds.GetGeoTransform()
+	num_bands = ds.RasterCount
+	all_bands = range(1,num_bands+1)
+	return ds, transform, all_bands
+
+def main(ds, transform, bands, x, y, kernel_size):
+
+	#if no band is indicated, print kernel for all bands
+	for b in bands:
+		print "\nBAND " + str(b) + ": "
+		print extract_kernel(ds, x, y, kernel_size, kernel_size, b, transform)
+
+
+if __name__ == '__main__':
+
+    try:
+        #parse arguments, use file docstring as parameter definition
+        args = docopt.docopt(__doc__, options_first=True)
+
+        #call main function
+        ds, transform, all_bands = open_map_and_extract_bands(args['<mappath>'])
+        
+        if args['--band'] == ['ALL']:
+        	bands = all_bands
+        else:
+        	try:
+        		bands = [int(i) for i in args['--band']]
+        	except ValueError:
+        		bands = all_bands
+        main(ds, transform, bands, int(args['<x>']), int(args['<y>']), int(args['<kernel_size>']))
+        
+
+    #handle invalid options
+    except docopt.DocoptExit as e:
+        print e.message

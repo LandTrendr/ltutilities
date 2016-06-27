@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+
+'''
+Silent Run.
+
+Usage:
+  silentRun <command> [--logfile=<lg>]
+  silentRun -h | --help
+
+Options:
+  -h --help     	  Show this screen.
+  --logfile=<lg> 	  Location of file to write stdout and stderr to.
+'''
+
+import docopt, os, sys, subprocess
+
+def main(cmd, logfile):
+
+	#check current shell type & determine submit prompt
+	shell = os.environ["SHELL"]		
+	
+	if "csh" in shell:
+		if logfile:
+# 			if os.path.exists(logfile):
+# 				print("Appending outputs to existing file: " + logfile)
+# 				prompt = cmd + " >>& " + logfile + " &"
+# 			else:
+			prompt = cmd + " >& " + logfile + " &"
+		else:
+			prompt = cmd + " &"
+			
+	elif "bash" in shell:
+		if logfile:
+			if os.path.exists(logfile):
+				print("Appending outputs to existing file: " + logfile)
+				prompt = cmd + " >> " + logfile + " 2>&1 &"
+			else:
+				prompt = cmd + " > " + logfile + " 2>&1 &"
+		else:
+			prompt = cmd + " &"
+			
+	else:
+		sys.exit("Cannot recognize current shell type: " + shell)
+
+	print("Submitting job: " + prompt)
+	pid = subprocess.Popen(prompt, shell=True).pid
+	print "Job #: ", pid+1
+					
+if __name__ == '__main__':
+
+    try:
+        #parse arguments, use file docstring as parameter definition
+        args = docopt.docopt(__doc__)
+
+        #call main function
+        main(args['<command>'], args['--logfile'])
+
+    #handle invalid options
+    except docopt.DocoptExit as e:
+        print e.message
